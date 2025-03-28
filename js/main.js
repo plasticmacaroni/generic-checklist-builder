@@ -79,12 +79,73 @@ function processMarkdown(markdownString) {
         '<i class="bi bi-clipboard-check"></i>'
       );
 
+      // Check if there's an item with an unintentional parenthesis at the start
+      // This pattern matches items that start with a closing parenthesis followed by text
+      const orphanedParenPattern = /^(<i class="bi [^>]+><\/i>)\)\s*(.*)/;
+      const orphanedParenMatch = listItemText.match(orphanedParenPattern);
+      if (orphanedParenMatch) {
+        // Fix the format by removing the orphaned parenthesis
+        listItemText = `${orphanedParenMatch[1]}${orphanedParenMatch[2]}`;
+      }
+
       // Convert markdown-style links to HTML links
-      const linkPattern = /\[(.*?)\]\((.*?)\)/g;
-      listItemText = listItemText.replace(
-        linkPattern,
-        '<a href="$2" target="_blank">$1</a>'
-      );
+      // Use a more robust approach to handle Markdown links
+      let processedText = '';
+      let remainingText = listItemText;
+      let startIdx = 0;
+
+      // Regular expression to find the start of a Markdown link
+      const linkStartPattern = /\[([^\]]+)\]\(/g;
+      let linkStartMatch;
+
+      while ((linkStartMatch = linkStartPattern.exec(remainingText)) !== null) {
+        // Add text before the match
+        processedText += remainingText.substring(startIdx, linkStartMatch.index);
+
+        const linkText = linkStartMatch[1];
+        const linkStartPos = linkStartMatch.index + linkStartMatch[0].length;
+
+        // Find the properly balanced closing parenthesis
+        let parenCount = 1;
+        let urlEndPos = linkStartPos;
+
+        for (let i = linkStartPos; i < remainingText.length; i++) {
+          if (remainingText[i] === '(') {
+            parenCount++;
+          } else if (remainingText[i] === ')') {
+            parenCount--;
+            if (parenCount === 0) {
+              urlEndPos = i;
+              break;
+            }
+          }
+        }
+
+        // Extract the URL
+        const url = remainingText.substring(linkStartPos, urlEndPos);
+
+        // Add the HTML link to the processed text
+        processedText += `<a href="${url}" target="_blank">${linkText}</a>`;
+
+        // Update starting position for next search
+        startIdx = urlEndPos + 1;
+
+        // Update the linkStartPattern.lastIndex to avoid duplicate matches
+        linkStartPattern.lastIndex = startIdx;
+      }
+
+      // Add any remaining text
+      if (startIdx < remainingText.length) {
+        processedText += remainingText.substring(startIdx);
+      }
+
+      // Only replace the original text if we found and processed links
+      if (startIdx > 0) {
+        listItemText = processedText;
+      }
+
+      // Also check for orphaned closing parentheses after links have been processed
+      listItemText = listItemText.replace(/(<\/a>)\)/g, '$1');
 
       // Generate a unique ID for the item, starting by preparing a slice without the HTML tags, or else the ID may only get the first 50 characters of HTML (so it won't be unique)
       const listItemTextWithoutTags = listItemText.replace(
