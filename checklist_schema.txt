@@ -1,0 +1,24 @@
+Create a checklist using this format:
+1. Categories are denoted with "# Category Name"
+2. Items are listed with "- " prefix
+3. Sub-items are indented with two spaces before the "- " prefix
+4. Each item should have a type prefix:
+   - ::task:: for regular tasks
+   - ::missable:: for urgent/time-sensitive tasks
+   - ::item_uncommon:: for special items
+   - ::item_story:: for important notes
+5. Links can be added using markdown format: [Link text](https://example.com)
+
+Example:
+# Shopping List
+- ::task:: Buy groceries
+  - ::task:: Milk
+  - ::task:: Eggs
+  - ::missable:: Fresh bread (expires soon!)
+# Work Tasks
+- ::task:: Complete project report
+- ::missable:: Submit timesheet by Friday
+- ::task:: Check [company policy](https://example.com/policy)
+
+Convert the following list into a properly formatted checklist:
+[YOUR LIST HERE] 

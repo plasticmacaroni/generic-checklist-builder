@@ -1,0 +1,450 @@
+:root {
+  --badge-color: #ff6600;
+  --done-color: #32cd32;
+  --checkbox-bg-color: #1f6f8b;
+  --body-bg-color: #121212;
+  --body-font-color: #d0d0d0;
+  --highlight-bg-color: #ffd700;
+  --navbar-bg-color: #1f1f1f;
+  --navbar-link-color: #d0d0d0;
+  --active-link-bg-color: #ff6600;
+  --btn-group-flex-bg-color: #202020;
+  --back-to-top-bg-color: #202020;
+  --achievement-related-stroke-color: #ff6600;
+  --achievement-related-link-color: #3f9fd8;
+  --achievement-related-font-color: #d0d0d0;
+  --hover-color: #707070;
+  --btn-primary-color: #ff6600;
+  --btn-hover-text-color: #ffffff;
+}
+
+.in_progress,
+.done {
+  color: var(--main-color);
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+  font-weight: normal;
+  margin-left: 0.2em;
+  vertical-align: middle;
+  font-size: 0.9em;
+}
+
+.done {
+  color: var(--done-color);
+}
+
+@media print {
+  body {
+    color: var(--body-color);
+  }
+
+  .navbar,
+  #intro,
+  input[type="checkbox"],
+  .done,
+  .in_progress,
+  a {
+    display: none;
+  }
+
+  a {
+    color: var(--body-color);
+    text-decoration: underline;
+  }
+
+  a[href]:after {
+    content: none !important;
+  }
+
+  .tab-content>.tab-pane,
+  .pill-content>.pill-pane {
+    display: block;
+  }
+
+  .tab-pane {
+    page-break-after: always;
+  }
+}
+
+body {
+  background-color: var(--body-bg-color);
+  color: var(--body-font-color);
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 22px;
+}
+
+ul li ul {
+  padding-top: 0;
+}
+
+h3 {
+  margin-bottom: 0;
+}
+
+.checkbox label,
+.radio label {
+  /* Remove legacy styles */
+}
+
+.checkbox input[type="checkbox"],
+.checkbox-inline input[type="checkbox"],
+.radio input[type="radio"],
+.radio-inline input[type="radio"] {
+  /* Remove legacy styles */
+}
+
+.table_of_contents {
+  margin-left: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+.highlight {
+  background-color: rgb(255, 246, 18);
+}
+
+.hiddenfile {
+  width: 0px;
+  height: 0px;
+  overflow: hidden;
+}
+
+select {
+  background-color: var(--btn-group-flex-bg-color);
+}
+
+.navbar {
+  background-color: var(--navbar-bg-color) !important;
+  border-color: var(--navbar-border-color);
+}
+
+.navbar a {
+  color: var(--navbar-link-color) !important;
+}
+
+nav .active a {
+  background-color: var(--active-link-bg-color) !important;
+}
+
+.btn:hover {
+  color: var(--btn-hover-text-color);
+}
+
+.btn {
+  color: var(--btn-group-flex-font-color);
+  background-color: var(--btn-group-flex-bg-color);
+}
+
+.btn-group-flex {
+  z-index: 1000;
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 10px 0;
+  background-color: rgba(32, 32, 32, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-group-flex .btn {
+  margin: 0 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  min-width: 100px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-group-flex .glyphicon {
+  margin-right: 5px;
+}
+
+.fadingbutton.back-to-top {
+  border-top-right-radius: 0;
+  border-right: 0;
+  right: 0;
+}
+
+.back-to-top {
+  position: fixed;
+  bottom: 70px;
+  right: 20px;
+  text-decoration: none;
+  color: var(--back-to-top-font-color);
+  background-color: var(--back-to-top-bg-color);
+  font-size: 12px;
+  padding: 10px 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: none;
+  z-index: 1000;
+}
+
+.achievement-related .checkbox span {
+  -webkit-text-stroke: 0.6pt var(--achievement-related-stroke-color);
+  color: white;
+}
+
+.achievement-related .checkbox a {
+  -webkit-text-stroke-width: 0pt;
+  color: var(--achievement-related-link-color);
+  text-decoration: none;
+}
+
+.achievement-related li:not(.achievement-related) span {
+  -webkit-text-stroke-width: 0pt;
+  color: var(--achievement-related-font-color);
+  text-decoration: none;
+}
+
+.achievement-related .item_content a {
+  text-shadow: none;
+}
+
+.back-to-top:hover {
+  background-color: var(--hover-color);
+}
+
+.togglehide:hover {
+  background-color: var(--hover-color);
+}
+
+.btn-collapse {
+  padding: 4px 10px 1px;
+  margin-right: 10px;
+  vertical-align: top;
+}
+
+.btn:focus,
+.btn.active:focus {
+  outline: none;
+  outline: 0;
+}
+
+.btn.filter-inactive .glyphicon-eye-close {
+  display: inline-block;
+}
+
+.btn.filter-active .glyphicon-eye-open {
+  display: inline-block;
+}
+
+.btn.filter-inactive .glyphicon-chevron-down {
+  display: inline-block;
+}
+
+.btn.filter-active .glyphicon-chevron-up {
+  display: inline-block;
+}
+
+.btn.active {
+  text-decoration: line-through;
+}
+
+/* Icon when the collapsible content is shown */
+.btn-collapse:after {
+  font-family: "Glyphicons Halflings";
+  content: "\e082";
+}
+
+/* Icon when the collapsible content is hidden */
+.btn-collapse.collapsed:after {
+  content: "\e081";
+}
+
+h1 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+body.hide_completed .completed {
+  display: none !important;
+}
+
+.hide_filtered {
+  display: none !important;
+}
+
+/* Style for list items with data-id (clickable items) */
+li[data-id] {
+  position: relative;
+  padding: 4px 6px;
+  margin: 2px 0;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+li[data-id]:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Completed items style */
+li.completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Styling for icons */
+li[data-id] i.bi {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.bi {
+  margin-right: 8px;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+/* Remove any other conflicting styles */
+
+/* Add styles for the toggling filters */
+.glyphicon-eye-close,
+.glyphicon-eye-open,
+.glyphicon-chevron-down,
+.glyphicon-chevron-up {
+  margin-right: 5px;
+}
+
+.btn-group-flex input[type="checkbox"] {
+  /* Hide the actual checkbox */
+  position: absolute;
+  opacity: 0;
+}
+
+/* Show/hide for eye icons */
+.btn-group-flex input[type="checkbox"]~.glyphicon-eye-open {
+  display: none;
+}
+
+.btn-group-flex input[type="checkbox"]~.glyphicon-eye-close {
+  display: inline-block;
+}
+
+.btn-group-flex input[type="checkbox"]:checked~.glyphicon-eye-open {
+  display: inline-block;
+}
+
+.btn-group-flex input[type="checkbox"]:checked~.glyphicon-eye-close {
+  display: none;
+}
+
+/* Show/hide for arrow icons */
+.btn-group-flex input[type="checkbox"]~.glyphicon-chevron-down {
+  display: inline-block;
+}
+
+.btn-group-flex input[type="checkbox"]~.glyphicon-chevron-up {
+  display: none;
+}
+
+.btn-group-flex input[type="checkbox"]:checked~.glyphicon-chevron-down {
+  display: none;
+}
+
+.btn-group-flex input[type="checkbox"]:checked~.glyphicon-chevron-up {
+  display: inline-block;
+}
+
+#bottom-spacer {
+  height: 100px !important;
+  /* Increased to accommodate the fixed buttons */
+}
+
+#toggleCollapseAll {
+  margin: 10px 0 15px 0;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  background-color: var(--btn-group-flex-bg-color);
+  color: var(--body-font-color);
+  font-size: 14px;
+}
+
+#toggleCollapseAll:hover {
+  background-color: var(--hover-color);
+}
+
+#toggleCollapseAll .glyphicon {
+  margin-right: 5px;
+  position: relative;
+  top: 2px;
+}
+
+body.hide_uncommon li:has(i.bi-gem.text-success) {
+  display: none !important;
+}
+
+body.hide_story li:has(i.bi-book.text-danger) {
+  display: none !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .btn-group-flex {
+    flex-direction: column;
+    padding: 5px 0;
+  }
+
+  .btn-group-flex .btn {
+    margin: 3px 5px;
+    width: calc(100% - 10px);
+  }
+
+  #toggleCollapseAll {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .back-to-top {
+    bottom: 200px;
+    /* Higher up on mobile to not interfere with the button stack */
+  }
+}
+
+#feedback-message {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 10px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  display: none;
+  text-align: center;
+  min-width: 200px;
+  max-width: 80%;
+}
+
+.alert-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.alert-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.toc-count {
+  font-size: 0.9em;
+  color: #888;
+  margin-left: 5px;
+}

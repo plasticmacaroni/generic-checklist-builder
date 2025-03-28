@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+
+<head>
+    <meta charset="utf-8">
+    <title>Custom Checklist Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A customizable checklist tool to create and manage your own checklists.">
+    <meta name="author" content="Checklist Tool">
+    <link id="bootstrap" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <!-- icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="css/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script src="https://cdn.rawgit.com/andris9/jStorage/v0.4.12/jstorage.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+        var profilesKey = 'custom_checklist_profiles';
+    </script>
+    <script src="js/main.js"></script>
+    <script>
+        $(document).ready(function () {
+            generateTasks();
+        });
+    </script>
+</head>
+
+<body data-bs-theme="dark">
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#tabPlaythrough" data-toggle="tab">Checklist</a></li>
+                <li><a href="#tabCreate" data-toggle="tab">Create/Edit List</a></li>
+                <li><a href="#tabHelp" data-toggle="tab">Help</a></li>
+            </ul>
+            <div class="profile" style="float: right; padding-top: 8px;">
+                <div class="input-append">
+                    <select id="profiles">
+                    </select>
+                    <button class="btn btn-secondary" type="button" id="profileAdd">Add</button>
+                    <button class="btn btn-secondary" type="button" id="profileEdit">Edit</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <h1 class="text-center">Custom Checklist Tool</h1>
+    <div class="container">
+        <div class="btn btn-primary" type="button" data-toggle="collapse" data-target="#intro" aria-expanded="false"
+            aria-controls="intro">About This Tool</div>
+        <div id="intro" class="collapse">
+            <p>
+                This is a customizable checklist tool that allows you to create and manage your own checklists.
+                You can create categories and add items to each category. Items can be checked off as you complete them.
+            </p>
+            <p>
+                How to use this tool:
+            <ul>
+                <li><i class="bi bi-check2"></i>Go to the "Create/Edit List" tab to create a new checklist or edit an
+                    existing one</li>
+                <li><i class="bi bi-check2"></i>Create categories and add items to each category</li>
+                <li><i class="bi bi-check2"></i>Return to the "Checklist" tab to view and check off items as you
+                    complete them</li>
+                <li><i class="bi bi-check2"></i>Use the profile selector at the top right to manage multiple checklists
+                </li>
+            </ul>
+            </p>
+            <p>
+                Item types you can use:
+            <ul>
+                <li><i class="bi bi-clipboard-check"></i> Task - Use ::task:: prefix</li>
+                <li><i class="bi bi-stopwatch text-danger"></i> Urgent Task - Use ::missable:: prefix</li>
+                <li><i class="bi bi-gem text-success"></i> Special Item - Use ::item_uncommon:: prefix</li>
+                <li><i class="bi bi-book text-danger"></i> Important Note - Use ::item_story:: prefix</li>
+            </ul>
+            </p>
+        </div>
+
+        <div class="tab-content">
+            <div class="btn-group" role="group">
+                <button class="btn btn-secondary" id="toggleCollapseAll">
+                    <span class="glyphicon glyphicon-chevron-down"></span>
+                    <span class="glyphicon glyphicon-chevron-up" style="display:none;"></span>
+                    Collapse All
+                </button>
+            </div>
+
+            <div class="tab-pane active" id="tabPlaythrough">
+                <h2>Your Checklist <span id="playthrough_overall_total"></span></h2>
+                <ul class="table_of_contents">
+
+                </ul>
+                <hr />
+
+                <h3 id="Getting_Started"><a href="#" data-toggle="collapse" data-parent="#tabPlaythrough"
+                        class="btn btn-primary btn-collapse btn-sm"></a><a href="#">Getting Started</a></h3>
+                <ul class="panel-collapse collapse in">
+                    <li data-id="playthrough_welcome_to_tool"><i class="bi bi-clipboard-check"></i>Welcome to the Custom
+                        Checklist Tool! Create your first checklist by going to the "Create/Edit List" tab.</li>
+                </ul>
+            </div>
+
+            <div class="tab-pane" id="tabCreate">
+                <h2>Create/Edit Your Checklist</h2>
+                <div class="alert alert-info">
+                    <p>Enter your checklist content below. Use the following format:</p>
+                    <p><code># Category Name</code> - Creates a new category</p>
+                    <p><code>- Item text</code> - Creates a new item (defaults to task if no prefix)</p>
+                    <p>Use item prefixes like <code>::task::</code>, <code>::missable::</code>,
+                        <code>::item_uncommon::</code>, or <code>::item_story::</code> before the item text to set its
+                        type
+                    </p>
+                    <p>Use indentation (two spaces) to create sub-items</p>
+                    <p>You can add links using markdown format: <code>[Link text](https://example.com)</code></p>
+                    <p>Example:</p>
+                    <pre># Example Category
+- ::task:: Regular task item
+- ::missable:: Urgent task item
+- ::item_uncommon:: Special item
+- ::item_story:: Important note
+- ::task:: Task with [link to example](https://example.com)
+
+# Shopping List
+- ::task:: Buy groceries
+  - ::task:: Milk
+  - ::task:: Eggs
+  - ::missable:: Fresh bread (expires soon!)
+# Work Tasks
+- ::task:: Complete project report
+- ::missable:: Submit timesheet by Friday</pre>
+                </div>
+                <textarea id="checklist-content" style="width: 100%; height: 400px; font-family: monospace;"></textarea>
+                <div class="form-group" style="margin-top: 15px;">
+                    <button id="save-checklist" class="btn btn-primary">Save Checklist</button>
+                    <button id="import-checklist" class="btn btn-secondary">Import from File</button>
+                    <button id="export-checklist" class="btn btn-secondary">Export to File</button>
+                    <input type="file" id="file-input" style="display: none">
+                </div>
+            </div>
+
+            <div id="bottom-spacer" style="height:15vh;"></div>
+
+            <div class="tab-pane" id="tabHelp">
+                <h2>Help</h2>
+
+                <h3>How do I create a checklist?</h3>
+                <p>
+                    Go to the "Create/Edit List" tab and enter your checklist content using the format described.
+                    Once you've entered your content, click the "Save Checklist" button to save it.
+                </p>
+
+                <h3>How do I organize my checklist?</h3>
+                <p>
+                    Your checklist is organized into categories. Each category can contain multiple items, and items can
+                    have sub-items.
+                    Use the "# Category Name" format to create a new category, and use "- Item text" to create items.
+                    Use indentation (two spaces) to create sub-items.
+                </p>
+
+                <h3>Can I have different item types?</h3>
+                <p>
+                    Yes, you can use different prefixes to create different types of items:
+                <ul>
+                    <li><code>::task::</code> - Regular task</li>
+                    <li><code>::missable::</code> - Urgent task</li>
+                    <li><code>::item_uncommon::</code> - Special item</li>
+                    <li><code>::item_story::</code> - Important note</li>
+                </ul>
+                </p>
+
+                <h3>Can I use multiple checklists?</h3>
+                <p>
+                    Yes, you can create and manage multiple checklists using the profile selector at the top right of
+                    the page.
+                    Click "Add" to create a new profile, or "Edit" to rename or delete an existing profile.
+                </p>
+
+                <h3>How does the checklist get saved?</h3>
+                <p>
+                    Your checklist is saved in your browser's local storage. This means it's saved on your device and
+                    not on any server.
+                    If you clear your browser cache, your checklists may be lost. You can use the Export/Import feature
+                    to save your checklists to files.
+                </p>
+
+                <h3>How do I add links to my checklist?</h3>
+                <p>
+                    You can add links to your checklist items using Markdown format:
+                    <code>[Link text](https://example.com)</code>
+                    <br>
+                    For example: <code>- ::task:: Check the [project documentation](https://example.com/docs)</code>
+                    <br>
+                    Links will open in a new tab when clicked.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fixed bottom filter buttons -->
+    <div class="btn-group-flex">
+        <label class="btn btn-secondary">
+            <input type="checkbox" id="toggleHideCompleted">
+            <span class="glyphicon glyphicon-eye-close"></span>
+            <span class="glyphicon glyphicon-eye-open"></span>
+            Hide Completed
+        </label>
+        <label class="btn btn-secondary">
+            <input type="checkbox" id="toggleHideUncommon">
+            <span class="glyphicon glyphicon-eye-close"></span>
+            <span class="glyphicon glyphicon-eye-open"></span>
+            Hide Special Items
+        </label>
+        <label class="btn btn-secondary">
+            <input type="checkbox" id="toggleHideStory">
+            <span class="glyphicon glyphicon-eye-close"></span>
+            <span class="glyphicon glyphicon-eye-open"></span>
+            Hide Important Notes
+        </label>
+    </div>
+
+    <div id="profileModal" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h3 id="profileModalTitle" class="modal-title">Profile</h3>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+                        <div class="control-group">
+                            <label class="control-label" for="profileModalName">Name</label>
+                            <div class="controls">
+                                <input type="text" id="profileModalName" placeholder="Enter profile name">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" id="profileModalClose" class="btn btn-secondary" data-dismiss="modal">Close</a>
+                    <a href="#" id="profileModalAdd" class="btn btn-primary" data-dismiss="modal">Add</a>
+                    <a href="#" id="profileModalUpdate" class="btn btn-primary">Update</a>
+                    <a href="#" id="profileModalDelete" class="btn btn-danger">Delete</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a class="btn btn-secondary btn-sm fadingbutton back-to-top">Back to Top&thinsp;<span
+            class="glyphicon glyphicon-arrow-up"></span></a>
+
+</body>
+
+</html>
