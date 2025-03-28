@@ -448,3 +448,43 @@ body.hide_story li:has(i.bi-book.text-danger) {
   color: #888;
   margin-left: 5px;
 }
+
+/* Dialog customization */
+.modal-confirm {
+  color: var(--body-font-color);
+  background-color: var(--body-bg-color);
+  border-radius: 6px;
+  box-shadow: 0 3px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+}
+
+.modal-confirm .modal-header {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--accent-bg-color);
+  position: relative;
+}
+
+.modal-confirm .modal-footer {
+  border-top: 1px solid var(--border-color);
+  background: var(--accent-bg-color);
+}
+
+.modal-confirm .btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.modal-confirm .btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.modal-confirm .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.modal-confirm .btn-secondary:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}

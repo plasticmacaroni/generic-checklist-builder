@@ -475,35 +475,76 @@ function initializeProfileFunctionality($) {
 
   // Delete profile action
   $("#profileModalDelete").on("click", function () {
-    const currentProfileId = $.jStorage.get("current_profile", null);
-    const profiles = $.jStorage.get(profilesKey, {});
+    // Create custom modal for confirmation
+    const confirmModal = `
+      <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel">
+        <div class="modal-dialog modal-confirm" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="confirmDeleteModalLabel">Confirm Delete</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete this profile? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
 
-    if (currentProfileId && profiles[currentProfileId]) {
-      delete profiles[currentProfileId];
-      $.jStorage.set(profilesKey, profiles);
+    // Remove any existing modal
+    $("#confirmDeleteModal").remove();
 
-      // Set current profile to the first available one
-      const firstProfileId = Object.keys(profiles)[0];
-      if (firstProfileId) {
-        $.jStorage.set("current_profile", firstProfileId);
-      } else {
-        // If no profiles left, create a default one
-        const defaultProfileId = "default";
-        profiles[defaultProfileId] = {
-          id: defaultProfileId,
-          name: "Default",
-          checklistData: {},
-          checklistContent: "# Getting Started\n- ::task:: Welcome to the Custom Checklist Tool! Create your first checklist by going to the \"Create/Edit List\" tab."
-        };
+    // Add modal to body
+    $("body").append(confirmModal);
 
+    // Show modal
+    $("#confirmDeleteModal").modal("show");
+
+    // Handle delete confirmation
+    $("#confirmDeleteBtn").on("click", function () {
+      const currentProfileId = $.jStorage.get("current_profile", null);
+      const profiles = $.jStorage.get(profilesKey, {});
+
+      if (currentProfileId && profiles[currentProfileId]) {
+        delete profiles[currentProfileId];
         $.jStorage.set(profilesKey, profiles);
-        $.jStorage.set("current_profile", defaultProfileId);
-      }
 
-      populateProfiles();
-      generateTasks();
-      $("#profileModal").modal("hide");
-    }
+        // Set current profile to the first available one
+        const firstProfileId = Object.keys(profiles)[0];
+        if (firstProfileId) {
+          $.jStorage.set("current_profile", firstProfileId);
+        } else {
+          // If no profiles left, create a default one
+          const defaultProfileId = "default";
+          profiles[defaultProfileId] = {
+            id: defaultProfileId,
+            name: "Default",
+            checklistData: {},
+            checklistContent: "# Getting Started\n- ::task:: Welcome to the Custom Checklist Tool! Create your first checklist by going to the \"Create/Edit List\" tab."
+          };
+
+          $.jStorage.set(profilesKey, profiles);
+          $.jStorage.set("current_profile", defaultProfileId);
+        }
+
+        populateProfiles();
+        generateTasks();
+
+        // Hide both modals
+        $("#confirmDeleteModal").modal("hide");
+        $("#profileModal").modal("hide");
+
+        // Show feedback
+        showFeedback("Profile deleted successfully!");
+      }
+    });
   });
 
   // Checklist editing functionality
@@ -625,6 +666,12 @@ function createTableOfContents() {
     // Get item counts for the category
     const $items = $h3.next("ul").find("li[data-id]").not("li[data-id] li[data-id]");
     const total = $items.length;
+
+    // Skip empty categories or those with invalid/empty text
+    if (total === 0 || !text.trim()) {
+      return;
+    }
+
     const completed = $items.filter(".completed").length;
 
     // Create TOC item with count
