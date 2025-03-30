@@ -96,60 +96,77 @@ function processMarkdown(markdownString) {
       }
 
       // Convert markdown-style links to HTML links
-      // Use a more robust approach to handle Markdown links
       let processedText = '';
-      let remainingText = listItemText;
-      let startIdx = 0;
+      let lastIndex = 0;
+      let currentText = listItemText;
 
-      // Regular expression to find the start of a Markdown link
-      const linkStartPattern = /\[([^\]]+)\]\(/g;
-      let linkStartMatch;
+      while (true) {
+        const openBracketIndex = currentText.indexOf('[', lastIndex);
+        if (openBracketIndex === -1) {
+          // No more opening brackets found, append the rest of the text
+          processedText += currentText.substring(lastIndex);
+          break;
+        }
 
-      while ((linkStartMatch = linkStartPattern.exec(remainingText)) !== null) {
-        // Add text before the match
-        processedText += remainingText.substring(startIdx, linkStartMatch.index);
+        // Append text before the potential link
+        processedText += currentText.substring(lastIndex, openBracketIndex);
 
-        const linkText = linkStartMatch[1];
-        const linkStartPos = linkStartMatch.index + linkStartMatch[0].length;
-
-        // Find the properly balanced closing parenthesis
-        let parenCount = 1;
-        let urlEndPos = linkStartPos;
-
-        for (let i = linkStartPos; i < remainingText.length; i++) {
-          if (remainingText[i] === '(') {
-            parenCount++;
-          } else if (remainingText[i] === ')') {
-            parenCount--;
-            if (parenCount === 0) {
-              urlEndPos = i;
+        // Find the matching closing bracket for the link text
+        let bracketDepth = 1;
+        let closeBracketIndex = -1;
+        for (let i = openBracketIndex + 1; i < currentText.length; i++) {
+          if (currentText[i] === '[') {
+            bracketDepth++;
+          } else if (currentText[i] === ']') {
+            bracketDepth--;
+            if (bracketDepth === 0) {
+              closeBracketIndex = i;
               break;
             }
           }
         }
 
-        // Extract the URL
-        const url = remainingText.substring(linkStartPos, urlEndPos);
+        // Check if a matching bracket was found and if it's followed by '('
+        if (closeBracketIndex !== -1 && currentText[closeBracketIndex + 1] === '(') {
+          // Found the structure of a potential link: [text](...)
 
-        // Add the HTML link to the processed text
-        processedText += `<a href="${url}" target="_blank">${linkText}</a>`;
+          // Find the matching closing parenthesis for the URL
+          let parenDepth = 1;
+          let urlEndIndex = -1;
+          const urlStartIndex = closeBracketIndex + 2;
+          for (let i = urlStartIndex; i < currentText.length; i++) {
+            if (currentText[i] === '(') {
+              parenDepth++;
+            } else if (currentText[i] === ')') {
+              parenDepth--;
+              if (parenDepth === 0) {
+                urlEndIndex = i;
+                break;
+              }
+            }
+          }
 
-        // Update starting position for next search
-        startIdx = urlEndPos + 1;
+          if (urlEndIndex !== -1) {
+            // Valid link found!
+            const linkText = currentText.substring(openBracketIndex + 1, closeBracketIndex);
+            const url = currentText.substring(urlStartIndex, urlEndIndex);
 
-        // Update the linkStartPattern.lastIndex to avoid duplicate matches
-        linkStartPattern.lastIndex = startIdx;
+            // Append the HTML link
+            processedText += `<a href="${url}" target="_blank">${linkText}</a>`;
+            lastIndex = urlEndIndex + 1; // Move past the processed link
+          } else {
+            // Malformed link (missing closing parenthesis for URL), treat as plain text
+            processedText += currentText.substring(openBracketIndex, urlStartIndex); // Append '[text]('
+            lastIndex = urlStartIndex;
+          }
+        } else {
+          // Not a link structure, treat the opening bracket as plain text
+          processedText += '[';
+          lastIndex = openBracketIndex + 1;
+        }
       }
 
-      // Add any remaining text
-      if (startIdx < remainingText.length) {
-        processedText += remainingText.substring(startIdx);
-      }
-
-      // Only replace the original text if we found and processed links
-      if (startIdx > 0) {
-        listItemText = processedText;
-      }
+      listItemText = processedText; // Update listItemText with processed links
 
       // Also check for orphaned closing parentheses after links have been processed
       listItemText = listItemText.replace(/(<\/a>)\)/g, '$1');
