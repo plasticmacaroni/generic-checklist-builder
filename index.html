@@ -19,15 +19,8 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
     <script src="https://cdn.rawgit.com/andris9/jStorage/v0.4.12/jstorage.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-    <script type="text/javascript">
-        var profilesKey = 'custom_checklist_profiles';
-    </script>
+    <script src="js/lz-string.min.js"></script>
     <script src="js/main.js"></script>
-    <script>
-        $(document).ready(function () {
-            generateTasks();
-        });
-    </script>
 </head>
 
 <body data-bs-theme="dark">
@@ -221,6 +214,9 @@
             <span class="glyphicon glyphicon-eye-open"></span>
             Hide Important Notes
         </label>
+        <button class="btn btn-primary" id="share-checklist-btn" data-toggle="modal" data-target="#shareModal">
+            <span class="glyphicon glyphicon-share-alt"></span> Share Checklist
+        </button>
     </div>
 
     <div id="profileModal" class="modal fade">
@@ -246,6 +242,55 @@
                     <a href="#" id="profileModalAdd" class="btn btn-primary" data-dismiss="modal">Add</a>
                     <a href="#" id="profileModalUpdate" class="btn btn-primary">Update</a>
                     <a href="#" id="profileModalDelete" class="btn btn-danger">Delete</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share/Import Modal -->
+    <div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-labelledby="shareModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="shareModalLabel">Share / Import Checklist</h4>
+                </div>
+                <div class="modal-body">
+                    <!-- Sharing Section -->
+                    <h5>Share Current Checklist</h5>
+                    <p>Share your current checklist configuration with others.</p>
+                    <div class="form-group">
+                        <button class="btn btn-success" id="share-copy-url-btn" data-toggle="tooltip"
+                            data-placement="top" title="Copy a direct link to this checklist">
+                            <span class="glyphicon glyphicon-link"></span> Copy Sharable Link
+                        </button>
+                        <span id="share-url-disabled-reason" class="text-muted"
+                            style="display: none; margin-left: 10px;">(Link too long for URL sharing)</span>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default" id="share-copy-code-btn" data-toggle="tooltip"
+                            data-placement="top" title="Copy a text code for sharing">
+                            <span class="glyphicon glyphicon-copy"></span> Copy Sharable Code
+                        </button>
+                        <span id="copy-feedback" class="text-success"
+                            style="display: none; margin-left: 10px;">Copied!</span>
+                    </div>
+                    <hr>
+                    <!-- Importing Section -->
+                    <h5>Import Checklist from Code</h5>
+                    <p>Paste a shared code below to import a checklist.</p>
+                    <div class="form-group">
+                        <textarea class="form-control" id="import-code-area" rows="4"
+                            placeholder="Paste shared code here..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" id="import-load-code-btn">
+                        <span class="glyphicon glyphicon-import"></span> Load from Code
+                    </button>
+                    <span id="import-feedback" style="display: none; margin-left: 10px;"></span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
