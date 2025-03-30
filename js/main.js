@@ -716,6 +716,110 @@ function initializeProfileFunctionality($) {
 
   setupItemTypeToggle("#toggleHideUncommon", "uncommon");
   setupItemTypeToggle("#toggleHideStory", "story");
+
+  // --- Share Modal Logic ---
+  const MAX_URL_LENGTH = 2000; // Adjust as needed
+
+  // When the Share modal is shown, prepare the share options
+  $('#shareModal').on('show.bs.modal', function () {
+    const currentProfile = getCurrentProfile();
+    if (!currentProfile) {
+      console.error("No current profile found for sharing.");
+      // Optionally disable buttons or show an error in the modal
+      $('#share-copy-url-btn').prop('disabled', true);
+      $('#share-copy-code-btn').prop('disabled', true);
+      return;
+    }
+
+    const dataToShare = {
+      checklistContent: currentProfile.checklistContent || "",
+      checklistData: currentProfile.checklistData || {}
+    };
+
+    const compressedData = compressData(dataToShare);
+
+    if (!compressedData) {
+      console.error("Compression failed.");
+      $('#share-copy-url-btn').prop('disabled', true).tooltip('hide');
+      $('#share-copy-code-btn').prop('disabled', true).tooltip('hide');
+      $('#share-url-disabled-reason').text('(Compression error)').show();
+      return;
+    }
+
+    const baseUrl = window.location.origin + window.location.pathname; // Base URL without hash/query
+    const shareUrl = baseUrl + '#' + compressedData;
+    const urlLength = shareUrl.length;
+
+    // Configure URL Button
+    if (urlLength < MAX_URL_LENGTH) {
+      $('#share-copy-url-btn').prop('disabled', false).off('click').on('click', async function () {
+        const success = await copyToClipboard(shareUrl);
+        if (success) showCopyFeedback('copy-feedback', 'Link Copied!');
+      }).tooltip('enable');
+      $('#share-url-disabled-reason').hide();
+    } else {
+      $('#share-copy-url-btn').prop('disabled', true).tooltip('hide'); // Hide tooltip when disabled
+      $('#share-url-disabled-reason').text(`(Link too long: ${urlLength}/${MAX_URL_LENGTH} chars)`).show();
+    }
+
+    // Configure Code Button
+    $('#share-copy-code-btn').prop('disabled', false).off('click').on('click', async function () {
+      const success = await copyToClipboard(compressedData);
+      if (success) showCopyFeedback('copy-feedback', 'Code Copied!');
+    }).tooltip('enable');
+
+    // Clear import feedback and textarea
+    $('#import-code-area').val('');
+    $('#import-feedback').hide();
+    $('#copy-feedback').hide(); // Hide copy feedback initially
+
+  });
+
+  // Initialize tooltips (needs to be done after elements are in the DOM)
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip();
+  });
+
+
+  // --- Import from Code Logic ---
+  $('#import-load-code-btn').on('click', function () {
+    const compressedCode = $('#import-code-area').val().trim();
+    if (!compressedCode) {
+      showImportFeedback("Please paste a code first.", "error");
+      return;
+    }
+
+    const importedData = decompressData(compressedCode);
+
+    if (importedData && importedData.checklistContent !== undefined && importedData.checklistData !== undefined) {
+      // Success - Create new profile (similar to URL import)
+      const profiles = $.jStorage.get(profilesKey, {});
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const newProfileId = `imported-${timestamp}`;
+      const newProfileName = `Imported ${new Date().toLocaleDateString()}`;
+
+      profiles[newProfileId] = {
+        id: newProfileId,
+        name: newProfileName,
+        checklistData: importedData.checklistData || {},
+        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!"
+      };
+
+      $.jStorage.set(profilesKey, profiles);
+      $.jStorage.set("current_profile", newProfileId);
+
+      // Refresh UI
+      populateProfiles();
+      generateTasks();
+      showImportFeedback("Checklist imported successfully!", "success");
+      $('#import-code-area').val(''); // Clear textarea
+      // Optionally close modal: $('#shareModal').modal('hide');
+
+    } else {
+      // Failure
+      showImportFeedback("Invalid or corrupt code.", "error");
+    }
+  });
 }
 
 function createTableOfContents() {
@@ -767,9 +871,61 @@ function showFeedback(message, type = "success") {
 }
 
 $(document).ready(function () {
-  // Initialize the page
+  // --- Import from URL Fragment ---
+  const hash = window.location.hash.substring(1); // Remove leading '#'
+  if (hash) {
+    console.log("Found hash:", hash);
+    const importedData = decompressData(hash);
+
+    if (importedData && importedData.checklistContent !== undefined && importedData.checklistData !== undefined) {
+      console.log("Successfully decompressed data from hash:", importedData);
+      const profiles = $.jStorage.get(profilesKey, {});
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const newProfileId = `imported-${timestamp}`;
+      const newProfileName = `Imported ${new Date().toLocaleDateString()}`;
+
+      profiles[newProfileId] = {
+        id: newProfileId,
+        name: newProfileName,
+        checklistData: importedData.checklistData || {},
+        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!"
+      };
+
+      $.jStorage.set(profilesKey, profiles);
+      $.jStorage.set("current_profile", newProfileId);
+
+      console.log("New profile created:", newProfileId);
+
+      // Clean the URL hash without reloading
+      if (history.replaceState) {
+        history.replaceState(null, null, window.location.pathname + window.location.search);
+        console.log("URL hash cleaned.");
+      } else {
+        // Fallback for older browsers (might cause a reload or jump)
+        window.location.hash = '';
+        console.warn("history.replaceState not supported, hash removal might be imperfect.");
+      }
+
+      // Refresh UI
+      populateProfiles(); // Ensure this function selects the new profile
+      generateTasks();    // Generate tasks for the new profile
+      showFeedback("Checklist imported successfully from URL!", "success");
+
+    } else {
+      console.warn("Failed to decompress or validate data from hash.");
+      // Clean the URL hash even if import failed
+      if (history.replaceState) {
+        history.replaceState(null, null, window.location.pathname + window.location.search);
+      } else {
+        window.location.hash = '';
+      }
+      showFeedback("Could not import checklist from URL (invalid data).", "error");
+    }
+  }
+
+  // Initialize the rest of the page
   initializeProfileFunctionality($);
-  generateTasks();
+  generateTasks(); // Initial generation based on current/default profile
 
   // Back to top button
   $(window).scroll(function () {
@@ -785,3 +941,73 @@ $(document).ready(function () {
     return false;
   });
 });
+
+// --- LZString Compression/Decompression Helpers ---
+function compressData(data) {
+  try {
+    const jsonString = JSON.stringify(data);
+    return LZString.compressToBase64(jsonString);
+  } catch (error) {
+    console.error("Error compressing data:", error);
+    return null;
+  }
+}
+
+function decompressData(compressedString) {
+  try {
+    if (!compressedString) return null;
+    const jsonString = LZString.decompressFromBase64(compressedString);
+    if (!jsonString) return null; // Decompression failed
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error decompressing data:", error);
+    return null; // Also catches JSON parse errors
+  }
+}
+
+// Helper to show feedback in the modal
+function showImportFeedback(message, type = "success") {
+  const $feedback = $("#import-feedback");
+  $feedback.text(message)
+    .removeClass("text-success text-danger")
+    .addClass(type === "success" ? "text-success" : "text-danger")
+    .fadeIn();
+  setTimeout(() => $feedback.fadeOut(), 3000);
+}
+
+// Helper to show feedback for copy actions
+function showCopyFeedback(targetElementId, message = "Copied!") {
+  const $feedback = $("#" + targetElementId);
+  $feedback.text(message).fadeIn();
+  setTimeout(() => $feedback.fadeOut(), 1500);
+}
+
+// Helper to copy text to clipboard
+async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+      return false;
+    }
+  } else {
+    // Fallback for older browsers or non-secure contexts
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed"; // Prevent scrolling to bottom
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      return true;
+    } catch (err) {
+      console.error("Fallback copy failed: ", err);
+      document.body.removeChild(textArea);
+      return false;
+    }
+  }
+}
