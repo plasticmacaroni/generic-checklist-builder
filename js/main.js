@@ -406,28 +406,20 @@ function getCurrentProfile() {
   const profileId = $.jStorage.get("current_profile", null);
 
   if (!profileId || !profiles[profileId]) {
-    // If no current profile or the current profile doesn't exist, use the first one
-    const firstProfileId = Object.keys(profiles)[0];
-    if (firstProfileId) {
-      $.jStorage.set("current_profile", firstProfileId);
-      return profiles[firstProfileId];
-    }
-
     // If no profiles exist, create a default one with timestamp
-    const now = new Date();
-    const defaultProfileId = `default-${now.toISOString().replace(/[:.]/g, '-')}`;
-    const defaultProfileName = `Default ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-    profiles[defaultProfileId] = {
-      id: defaultProfileId,
-      name: defaultProfileName,
+    const { uniqueName, uniqueId } = generateUniqueProfileName("Default", profiles);
+
+    profiles[uniqueId] = {
+      id: uniqueId,
+      name: uniqueName,
       checklistData: {},
       checklistContent: "# Getting Started\n- ::task:: Welcome! This is your first checklist. Go to the \"Create/Edit List\" tab to customize it."
     };
 
     $.jStorage.set(profilesKey, profiles);
-    $.jStorage.set("current_profile", defaultProfileId);
-    console.log("Created timestamped default profile:", defaultProfileId);
-    return profiles[defaultProfileId];
+    $.jStorage.set("current_profile", uniqueId);
+    console.log("Created timestamped default profile:", uniqueId);
+    return profiles[uniqueId];
   }
 
   return profiles[profileId];
@@ -437,6 +429,22 @@ function saveCurrentProfile(profile) {
   const profiles = $.jStorage.get(profilesKey, {});
   profiles[profile.id] = profile;
   $.jStorage.set(profilesKey, profiles);
+}
+
+// Function to generate a unique profile ID and name
+function generateUniqueProfileName(baseName, profiles) {
+  const now = new Date();
+  const dateString = now.toLocaleDateString();
+  const timeString = now.toLocaleTimeString();
+  const timestamp = now.toISOString().replace(/[:.]/g, '-');
+
+  // Always include Date and Time for generated profiles
+  const finalName = `${baseName} ${dateString} ${timeString}`;
+
+  // Generate a unique ID using the base name and timestamp
+  const uniqueId = `${baseName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}`;
+
+  return { uniqueName: finalName, uniqueId: uniqueId };
 }
 
 function populateProfiles() {
@@ -495,18 +503,19 @@ function initializeProfileFunctionality($) {
     const profileName = $("#profileModalName").val().trim();
     if (!profileName) return;
 
-    const profileId = sanitize(profileName) + "_" + Date.now();
     const profiles = $.jStorage.get(profilesKey, {});
 
-    profiles[profileId] = {
-      id: profileId,
-      name: profileName,
+    const { uniqueName, uniqueId } = generateUniqueProfileName(profileName, profiles);
+
+    profiles[uniqueId] = {
+      id: uniqueId,
+      name: uniqueName,
       checklistData: {},
       checklistContent: "# Getting Started\n- ::task:: Welcome to the Custom Checklist Tool! Create your first checklist by going to the \"Create/Edit List\" tab."
     };
 
     $.jStorage.set(profilesKey, profiles);
-    $.jStorage.set("current_profile", profileId);
+    $.jStorage.set("current_profile", uniqueId);
 
     populateProfiles();
     generateTasks();
@@ -590,19 +599,18 @@ function initializeProfileFunctionality($) {
           $.jStorage.set("current_profile", firstProfileId);
         } else {
           // If no profiles left, create a default one with timestamp
-          const now = new Date();
-          const defaultProfileId = `default-${now.toISOString().replace(/[:.]/g, '-')}`;
-          const defaultProfileName = `Default ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-          profiles[defaultProfileId] = {
-            id: defaultProfileId,
-            name: defaultProfileName,
+          const { uniqueName, uniqueId } = generateUniqueProfileName("Default", profiles);
+
+          profiles[uniqueId] = {
+            id: uniqueId,
+            name: uniqueName,
             checklistData: {},
             checklistContent: "# Getting Started\n- ::task:: Welcome! This is your first checklist. Go to the \"Create/Edit List\" tab to customize it."
           };
 
           $.jStorage.set(profilesKey, profiles);
-          $.jStorage.set("current_profile", defaultProfileId);
-          console.log("Created timestamped default profile after deletion:", defaultProfileId);
+          $.jStorage.set("current_profile", uniqueId);
+          console.log("Created timestamped default profile after deletion:", uniqueId);
         }
 
         populateProfiles();
@@ -804,30 +812,20 @@ function initializeProfileFunctionality($) {
     if (importedData && importedData.checklistContent !== undefined && importedData.checklistData !== undefined) {
       // Success - Create new profile (similar to URL import)
       const profiles = $.jStorage.get(profilesKey, {});
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const newProfileId = `imported-${timestamp}`;
 
-      // Refined profile naming
-      const baseProfileName = `Imported ${new Date().toLocaleDateString()}`;
-      let finalProfileName = baseProfileName;
-      const profileExists = Object.values(profiles).some(profile => profile.name === baseProfileName);
+      // Use the new function to get unique ID and name
+      const { uniqueName, uniqueId } = generateUniqueProfileName("Imported", profiles);
 
-      if (profileExists) {
-        // If name exists for today, add time for uniqueness
-        const timeString = new Date().toLocaleTimeString();
-        finalProfileName = `${baseProfileName} ${timeString}`;
-      }
-
-      profiles[newProfileId] = {
-        id: newProfileId,
-        name: finalProfileName, // Use the final name
+      profiles[uniqueId] = {
+        id: uniqueId,
+        name: uniqueName, // Use the generated unique name
         checklistData: importedData.checklistData || {},
-        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!",
-        importHash: hash // Store the original hash
+        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!"
+        // Note: No importHash needed for code import
       };
 
       $.jStorage.set(profilesKey, profiles);
-      $.jStorage.set("current_profile", newProfileId);
+      $.jStorage.set("current_profile", uniqueId); // Set current profile to the new unique ID
 
       // Refresh UI
       populateProfiles();
@@ -919,36 +917,26 @@ function processUrlHash() {
   if (importedData && importedData.checklistContent !== undefined && importedData.checklistData !== undefined) {
     console.log("Successfully decompressed data from hash:", importedData);
     const profiles = $.jStorage.get(profilesKey, {});
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const newProfileId = `imported-${timestamp}`;
 
-    // Refined profile naming
-    const baseProfileName = `Imported ${new Date().toLocaleDateString()}`;
-    let finalProfileName = baseProfileName;
-    const profileExists = Object.values(profiles).some(profile => profile.name === baseProfileName);
+    // Use the new function to get unique ID and name
+    const { uniqueName, uniqueId } = generateUniqueProfileName("Imported", profiles);
 
-    if (profileExists) {
-      // If name exists for today, add time for uniqueness
-      const timeString = new Date().toLocaleTimeString();
-      finalProfileName = `${baseProfileName} ${timeString}`;
-    }
-
-    profiles[newProfileId] = {
-      id: newProfileId,
-      name: finalProfileName, // Use the final name
+    profiles[uniqueId] = {
+      id: uniqueId,
+      name: uniqueName, // Use the generated unique name
       checklistData: importedData.checklistData || {},
       checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!",
       importHash: hash // Store the original hash
     };
 
     $.jStorage.set(profilesKey, profiles);
-    $.jStorage.set("current_profile", newProfileId);
+    $.jStorage.set("current_profile", uniqueId); // Set current profile to the new unique ID
 
     // Add the hash to the list of imported hashes and save it
     importedHashes.push(hash);
     $.jStorage.set(importedHashesKey, importedHashes);
 
-    console.log("New profile created:", newProfileId, "Name:", finalProfileName);
+    console.log("New profile created:", uniqueId, "Name:", uniqueName);
 
     // Clean the URL hash without reloading
     cleanUrlHash();
