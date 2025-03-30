@@ -414,6 +414,9 @@ function calculateTotals() {
   var completed = $items.filter(".completed").length;
 
   $("#playthrough_overall_total").text(" - " + completed + "/" + total);
+
+  // Update Table of Contents counts as well
+  updateTocCounts();
 }
 
 // Profile management functions
@@ -1154,4 +1157,30 @@ async function copyToClipboard(text) {
       return false;
     }
   }
+}
+
+// Function to update the counts in the Table of Contents
+function updateTocCounts() {
+  $(".table_of_contents li").each(function () {
+    const $li = $(this);
+    const $a = $li.find("a");
+    const $countSpan = $li.find("span.toc-count");
+    const targetId = $a.attr("href"); // Should be like "#Category_ID"
+
+    if (!targetId || targetId === '#') return; // Skip if no valid href
+
+    const categoryId = targetId.substring(1); // Remove '#'
+    const $categoryHeader = $("h3#" + categoryId);
+
+    if ($categoryHeader.length > 0) {
+      const $items = $categoryHeader.next("ul").find("li[data-id]").not("li[data-id] li[data-id]");
+      const total = $items.length;
+      const completed = $items.filter(".completed").length;
+
+      // Update the count text
+      if ($countSpan.length > 0) {
+        $countSpan.text(" (" + completed + "/" + total + ")");
+      }
+    }
+  });
 }
