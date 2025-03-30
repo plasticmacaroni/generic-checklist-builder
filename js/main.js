@@ -79,6 +79,9 @@ function processMarkdown(markdownString) {
         '<i class="bi bi-clipboard-check"></i>'
       );
 
+      // Convert markdown bold syntax to HTML
+      listItemText = listItemText.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+
       // Check if there's an item with an unintentional parenthesis at the start
       // This pattern matches items that start with a closing parenthesis followed by text
       const orphanedParenPattern = /^(<i class="bi [^>]+><\/i>)\)\s*(.*)/;
