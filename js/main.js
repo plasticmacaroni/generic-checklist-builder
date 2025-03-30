@@ -1,3 +1,7 @@
+// Storage keys
+const profilesKey = "profiles";
+const importedHashesKey = "imported_hashes"; // Key for storing imported URL hashes
+
 function sanitize(s) {
   return s
     .split("")
@@ -409,17 +413,20 @@ function getCurrentProfile() {
       return profiles[firstProfileId];
     }
 
-    // If no profiles exist, create a default one
-    const defaultProfileId = "default";
+    // If no profiles exist, create a default one with timestamp
+    const now = new Date();
+    const defaultProfileId = `default-${now.toISOString().replace(/[:.]/g, '-')}`;
+    const defaultProfileName = `Default ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
     profiles[defaultProfileId] = {
       id: defaultProfileId,
-      name: "Default",
+      name: defaultProfileName,
       checklistData: {},
-      checklistContent: "# Getting Started\n- ::task:: Welcome to the Custom Checklist Tool! Create your first checklist by going to the \"Create/Edit List\" tab."
+      checklistContent: "# Getting Started\n- ::task:: Welcome! This is your first checklist. Go to the \"Create/Edit List\" tab to customize it."
     };
 
     $.jStorage.set(profilesKey, profiles);
     $.jStorage.set("current_profile", defaultProfileId);
+    console.log("Created timestamped default profile:", defaultProfileId);
     return profiles[defaultProfileId];
   }
 
@@ -447,22 +454,7 @@ function populateProfiles() {
     $select.append($option);
   });
 
-  // If no profiles exist, create a default one
-  if (Object.keys(profiles).length === 0) {
-    const defaultProfileId = "default";
-    profiles[defaultProfileId] = {
-      id: defaultProfileId,
-      name: "Default",
-      checklistData: {},
-      checklistContent: "# Getting Started\n- ::task:: Welcome to the Custom Checklist Tool! Create your first checklist by going to the \"Create/Edit List\" tab."
-    };
-
-    $.jStorage.set(profilesKey, profiles);
-    $.jStorage.set("current_profile", defaultProfileId);
-
-    // Add the default profile to the select
-    $select.append($("<option>").val(defaultProfileId).text("Default").prop("selected", true));
-  }
+  // If no profiles exist, do nothing here (default is created in getCurrentProfile if needed)
 }
 
 function initializeProfileFunctionality($) {
@@ -577,25 +569,40 @@ function initializeProfileFunctionality($) {
       const profiles = $.jStorage.get(profilesKey, {});
 
       if (currentProfileId && profiles[currentProfileId]) {
+        // Get the hash before deleting the profile
+        const hashToDelete = profiles[currentProfileId].importHash;
+
+        // Delete the profile object
         delete profiles[currentProfileId];
         $.jStorage.set(profilesKey, profiles);
+
+        // If a hash was associated, remove it from the imported list
+        if (hashToDelete) {
+          let importedHashes = $.jStorage.get(importedHashesKey, []);
+          importedHashes = importedHashes.filter(h => h !== hashToDelete);
+          $.jStorage.set(importedHashesKey, importedHashes);
+          console.log("Removed hash from imported list:", hashToDelete);
+        }
 
         // Set current profile to the first available one
         const firstProfileId = Object.keys(profiles)[0];
         if (firstProfileId) {
           $.jStorage.set("current_profile", firstProfileId);
         } else {
-          // If no profiles left, create a default one
-          const defaultProfileId = "default";
+          // If no profiles left, create a default one with timestamp
+          const now = new Date();
+          const defaultProfileId = `default-${now.toISOString().replace(/[:.]/g, '-')}`;
+          const defaultProfileName = `Default ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
           profiles[defaultProfileId] = {
             id: defaultProfileId,
-            name: "Default",
+            name: defaultProfileName,
             checklistData: {},
-            checklistContent: "# Getting Started\n- ::task:: Welcome to the Custom Checklist Tool! Create your first checklist by going to the \"Create/Edit List\" tab."
+            checklistContent: "# Getting Started\n- ::task:: Welcome! This is your first checklist. Go to the \"Create/Edit List\" tab to customize it."
           };
 
           $.jStorage.set(profilesKey, profiles);
           $.jStorage.set("current_profile", defaultProfileId);
+          console.log("Created timestamped default profile after deletion:", defaultProfileId);
         }
 
         populateProfiles();
@@ -751,16 +758,19 @@ function initializeProfileFunctionality($) {
     const urlLength = shareUrl.length;
 
     // Configure URL Button
-    if (urlLength < MAX_URL_LENGTH) {
-      $('#share-copy-url-btn').prop('disabled', false).off('click').on('click', async function () {
-        const success = await copyToClipboard(shareUrl);
-        if (success) showCopyFeedback('copy-feedback', 'Link Copied!');
-      }).tooltip('enable');
-      $('#share-url-disabled-reason').hide();
-    } else {
-      $('#share-copy-url-btn').prop('disabled', true).tooltip('hide'); // Hide tooltip when disabled
-      $('#share-url-disabled-reason').text(`(Link too long: ${urlLength}/${MAX_URL_LENGTH} chars)`).show();
-    }
+    // Always enable the button, but add a warning on click if too long
+    $('#share-copy-url-btn').prop('disabled', false).off('click').on('click', async function () {
+      const success = await copyToClipboard(shareUrl);
+      if (success) {
+        showCopyFeedback('copy-feedback', 'Link Copied!');
+        // Also show a warning if the URL is too long
+        if (urlLength >= MAX_URL_LENGTH) {
+          showFeedback(`Warning: Link is very long (${urlLength} chars) and may not work everywhere.`, "error");
+        }
+      }
+    }).tooltip('enable');
+    // Remove the reason text display
+    $('#share-url-disabled-reason').hide();
 
     // Configure Code Button
     $('#share-copy-code-btn').prop('disabled', false).off('click').on('click', async function () {
@@ -796,13 +806,24 @@ function initializeProfileFunctionality($) {
       const profiles = $.jStorage.get(profilesKey, {});
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const newProfileId = `imported-${timestamp}`;
-      const newProfileName = `Imported ${new Date().toLocaleDateString()}`;
+
+      // Refined profile naming
+      const baseProfileName = `Imported ${new Date().toLocaleDateString()}`;
+      let finalProfileName = baseProfileName;
+      const profileExists = Object.values(profiles).some(profile => profile.name === baseProfileName);
+
+      if (profileExists) {
+        // If name exists for today, add time for uniqueness
+        const timeString = new Date().toLocaleTimeString();
+        finalProfileName = `${baseProfileName} ${timeString}`;
+      }
 
       profiles[newProfileId] = {
         id: newProfileId,
-        name: newProfileName,
+        name: finalProfileName, // Use the final name
         checklistData: importedData.checklistData || {},
-        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!"
+        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!",
+        importHash: hash // Store the original hash
       };
 
       $.jStorage.set(profilesKey, profiles);
@@ -870,58 +891,103 @@ function showFeedback(message, type = "success") {
   }, 3000);
 }
 
-$(document).ready(function () {
-  // --- Import from URL Fragment ---
-  const hash = window.location.hash.substring(1); // Remove leading '#'
-  if (hash) {
-    console.log("Found hash:", hash);
-    const importedData = decompressData(hash);
+// Function to process the URL hash for imported checklists
+function processUrlHash() {
+  const hash = window.location.hash.substring(1); // Get current hash, remove leading '#'
 
-    if (importedData && importedData.checklistContent !== undefined && importedData.checklistData !== undefined) {
-      console.log("Successfully decompressed data from hash:", importedData);
-      const profiles = $.jStorage.get(profilesKey, {});
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const newProfileId = `imported-${timestamp}`;
-      const newProfileName = `Imported ${new Date().toLocaleDateString()}`;
-
-      profiles[newProfileId] = {
-        id: newProfileId,
-        name: newProfileName,
-        checklistData: importedData.checklistData || {},
-        checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!"
-      };
-
-      $.jStorage.set(profilesKey, profiles);
-      $.jStorage.set("current_profile", newProfileId);
-
-      console.log("New profile created:", newProfileId);
-
-      // Clean the URL hash without reloading
-      if (history.replaceState) {
-        history.replaceState(null, null, window.location.pathname + window.location.search);
-        console.log("URL hash cleaned.");
-      } else {
-        // Fallback for older browsers (might cause a reload or jump)
-        window.location.hash = '';
-        console.warn("history.replaceState not supported, hash removal might be imperfect.");
-      }
-
-      // Refresh UI
-      populateProfiles(); // Ensure this function selects the new profile
-      generateTasks();    // Generate tasks for the new profile
-      showFeedback("Checklist imported successfully from URL!", "success");
-
-    } else {
-      console.warn("Failed to decompress or validate data from hash.");
-      // Clean the URL hash even if import failed
-      if (history.replaceState) {
-        history.replaceState(null, null, window.location.pathname + window.location.search);
-      } else {
-        window.location.hash = '';
-      }
-      showFeedback("Could not import checklist from URL (invalid data).", "error");
-    }
+  if (!hash) {
+    // No hash, nothing to do
+    return;
   }
+
+  console.log("Processing hash:", hash);
+
+  // Check if this hash has already been imported
+  const importedHashes = $.jStorage.get(importedHashesKey, []);
+  if (importedHashes.includes(hash)) {
+    console.log("Hash already imported:", hash);
+    showFeedback("This checklist has already been imported.", "error");
+
+    // Clean the URL hash anyway
+    cleanUrlHash();
+    return; // Stop processing
+  }
+
+  // Attempt to decompress and process the hash
+  const importedData = decompressData(hash);
+
+  if (importedData && importedData.checklistContent !== undefined && importedData.checklistData !== undefined) {
+    console.log("Successfully decompressed data from hash:", importedData);
+    const profiles = $.jStorage.get(profilesKey, {});
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const newProfileId = `imported-${timestamp}`;
+
+    // Refined profile naming
+    const baseProfileName = `Imported ${new Date().toLocaleDateString()}`;
+    let finalProfileName = baseProfileName;
+    const profileExists = Object.values(profiles).some(profile => profile.name === baseProfileName);
+
+    if (profileExists) {
+      // If name exists for today, add time for uniqueness
+      const timeString = new Date().toLocaleTimeString();
+      finalProfileName = `${baseProfileName} ${timeString}`;
+    }
+
+    profiles[newProfileId] = {
+      id: newProfileId,
+      name: finalProfileName, // Use the final name
+      checklistData: importedData.checklistData || {},
+      checklistContent: importedData.checklistContent || "# Imported Checklist\\n- ::task:: Welcome!",
+      importHash: hash // Store the original hash
+    };
+
+    $.jStorage.set(profilesKey, profiles);
+    $.jStorage.set("current_profile", newProfileId);
+
+    // Add the hash to the list of imported hashes and save it
+    importedHashes.push(hash);
+    $.jStorage.set(importedHashesKey, importedHashes);
+
+    console.log("New profile created:", newProfileId, "Name:", finalProfileName);
+
+    // Clean the URL hash without reloading
+    cleanUrlHash();
+
+    // Refresh UI
+    populateProfiles(); // Ensure this function selects the new profile
+    generateTasks();    // Generate tasks for the new profile
+    showFeedback("Checklist imported successfully from URL!", "success");
+
+  } else {
+    console.warn("Failed to decompress or validate data from hash.");
+    // Clean the URL hash even if import failed
+    cleanUrlHash();
+    showFeedback("Could not import checklist from URL (invalid data).", "error");
+  }
+}
+
+// Helper function to clean the hash from the URL
+function cleanUrlHash() {
+  if (history.replaceState) {
+    // Use replaceState to clean the URL without adding to history or reloading
+    history.replaceState(null, null, window.location.pathname + window.location.search);
+    console.log("URL hash cleaned.");
+  } else {
+    // Fallback for older browsers (might cause a reload or jump)
+    window.location.hash = '';
+    console.warn("history.replaceState not supported, hash removal might be imperfect.");
+  }
+}
+
+$(document).ready(function () {
+  // Process the hash on initial page load
+  processUrlHash();
+
+  // Also process the hash whenever it changes (e.g., pasting a URL)
+  $(window).on('hashchange', function () {
+    console.log("Hash changed, processing...");
+    processUrlHash();
+  });
 
   // Initialize the rest of the page
   initializeProfileFunctionality($);
@@ -942,10 +1008,78 @@ $(document).ready(function () {
   });
 });
 
+// --- Tokenization Helpers ---
+
+// Dictionary: Map tokens (short strings) to original long strings
+const tokenDictionary = {
+  "~T~": "::task::",
+  "~M~": "::missable::",
+  "~U~": "::item_uncommon::",
+  "~S~": "::item_story::",
+  "~L~": "https://",
+  // Add more frequently used long strings or patterns here
+};
+
+// Precompute the reverse dictionary for faster detokenization
+const reverseTokenDictionary = Object.fromEntries(
+  Object.entries(tokenDictionary).map(([key, value]) => [value, key])
+);
+
+// Function to replace long strings with tokens in checklistContent
+function tokenizeData(data) {
+  if (!data || !data.checklistContent) return data;
+
+  let tokenizedContent = data.checklistContent;
+  // Iterate longer strings first to avoid partial replacements
+  const sortedOriginals = Object.keys(reverseTokenDictionary).sort((a, b) => b.length - a.length);
+
+  for (const original of sortedOriginals) {
+    const token = reverseTokenDictionary[original];
+    // Use a regex with the 'g' flag for global replacement
+    // Escape special regex characters in the original string
+    const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    tokenizedContent = tokenizedContent.replace(new RegExp(escapedOriginal, 'g'), token);
+  }
+
+  // Return a *new* object with the tokenized content
+  return {
+    ...data,
+    checklistContent: tokenizedContent,
+    // Note: We are not tokenizing checklistData keys for now, focusing on content size.
+  };
+}
+
+// Function to replace tokens with original strings in checklistContent
+function detokenizeData(data) {
+  if (!data || !data.checklistContent) return data;
+
+  let detokenizedContent = data.checklistContent;
+  // Iterate tokens for replacement
+  // No specific order needed here, but iterating the dictionary is fine
+  for (const token in tokenDictionary) {
+    const original = tokenDictionary[token];
+    // Use a regex with the 'g' flag for global replacement
+    // Escape special regex characters in the token
+    const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    detokenizedContent = detokenizedContent.replace(new RegExp(escapedToken, 'g'), original);
+  }
+
+  // Return a *new* object with the detokenized content
+  return {
+    ...data,
+    checklistContent: detokenizedContent,
+  };
+}
+
+
 // --- LZString Compression/Decompression Helpers ---
 function compressData(data) {
   try {
-    const jsonString = JSON.stringify(data);
+    // 1. Tokenize the data (specifically checklistContent for now)
+    const tokenizedData = tokenizeData(data);
+    // 2. Stringify the tokenized data
+    const jsonString = JSON.stringify(tokenizedData);
+    // 3. Compress the stringified tokenized data
     return LZString.compressToBase64(jsonString);
   } catch (error) {
     console.error("Error compressing data:", error);
@@ -956,12 +1090,17 @@ function compressData(data) {
 function decompressData(compressedString) {
   try {
     if (!compressedString) return null;
+    // 1. Decompress the string
     const jsonString = LZString.decompressFromBase64(compressedString);
     if (!jsonString) return null; // Decompression failed
-    return JSON.parse(jsonString);
+    // 2. Parse the JSON string
+    let parsedData = JSON.parse(jsonString);
+    // 3. Detokenize the data (specifically checklistContent for now)
+    return detokenizeData(parsedData);
   } catch (error) {
+    // Catch errors from decompression, parsing, or detokenization
     console.error("Error decompressing data:", error);
-    return null; // Also catches JSON parse errors
+    return null; // Also catches JSON parse errors or detokenization errors
   }
 }
 
